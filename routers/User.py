@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException,  status
+from fastapi import APIRouter, Depends, HTTPException,  status, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.orm import Session
 from backend.db import *
@@ -7,6 +8,7 @@ from schemas import CreateUser, UpdateUser
 from typing import Annotated
 from sqlalchemy import select, update, delete
 from security import *
+from templates import templates
 
 
 router = APIRouter(prefix="/user", tags=['user'])
@@ -25,22 +27,23 @@ async def get_all_users(db: Annotated[Session, Depends(get_db)]):
 
 
 @router.post("/create_user")
-async def create_user(create_user: CreateUser, db: Annotated[Session, Depends(get_db)]):
+async def create_user(request:Request, create_user: CreateUser,
+                      db: Annotated[Session, Depends(get_db)]) -> HTMLResponse:
     # Проверка совпадения паролей
     if create_user.password != create_user.confirm_password:
-        raise HTTPException(status_code=400, detail="Пароли не совпадают")
+        return templates.TemplateResponse("register.html", {request: request, "error": "Пароли не совпадают"})
 
     # Проверка существующего пользователя
     existing_user_result = db.execute(select(User).where(User.username == create_user.username))
     existing_user = existing_user_result.scalar_one_or_none()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Имя пользователя уже занято")
+        return templates.TemplateResponse("register.html", {request: request, "error": "Имя пользователя уже занято"})
 
     # Проверка существующего email
     existing_email_result = db.execute(select(User).where(User.email == create_user.email))
     existing_email = existing_email_result.scalar_one_or_none()
     if existing_email:
-        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+        return templates.TemplateResponse("register.html", {request: request, "error":"Email уже зарегистрирован"})
 
     # Хэширование пароля
     hashed_password = pwd_context.hash(create_user.password)
@@ -55,7 +58,7 @@ async def create_user(create_user: CreateUser, db: Annotated[Session, Depends(ge
     db.execute(stmt)
     db.commit()
 
-    return {'status_code': status.HTTP_201_CREATED, 'transaction': 'User created successfully'}
+    return RedirectResponse(url="register.html", status_code=303)
 
 
 @router.put("/update_user/{user_id}")

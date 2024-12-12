@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Добро пожаловать в приложение блог{% endblock %}</title>
+  </head>
+  <body>
+    <nav>
+      <a href="/">Главная</a>
+      <a href="/login">Войти</a>
+      <a href="/register">Регистрация</a>
+      <a href="/register">Посты</a>
+    </nav>
+    <hr />
+    {% block content %} {% endblock %}
+  </body>
+</html>
